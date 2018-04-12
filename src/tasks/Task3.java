@@ -2,6 +2,8 @@ package tasks;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -9,40 +11,62 @@ public class Task3 {
   public static void main(final String[] args) {
     // опрашиваем ввод
     final Scanner scanner = new Scanner(System.in);
-    System.out.print("filename = ");
-    final String filename = scanner.next();
-    System.out.print("key = ");
-    final String key = scanner.next();
+    final Properties props = tryOpenProps(scanner);
+    final String value = tryReadValueByKey(props, scanner);
     scanner.close();
 
-    final String value = retrieveValueFromFile(filename, key);
     System.out.println(value);
   }
 
+  private static Properties tryOpenProps(final Scanner scanner) {
+    InputStream stream = null;
+    Properties properties = null;
+    do {
+      System.out.print("filename = ");
+      final String filename = scanner.next();
+      stream = tryOpenInputStream(stream, filename);
+      properties = tryOpenProperties(stream, properties, filename);
+    } while (stream == null || properties == null);
+    return properties;
+  }
+
   // выводит значение из файла
-  private static String retrieveValueFromFile(final String filename, final String key) {
-    final Properties props = loadProperties(filename);
-    final String value = props.getProperty(key);
-    if (value == null) {
-      throw new RuntimeException("Unable to find value for key " + key);
-    }
+  private static String tryReadValueByKey(final Properties props, final Scanner scanner) {
+    String value;
+    do {
+      System.out.print("key = ");
+      final String key = scanner.next();
+      value = props.getProperty(key);
+      if (value == null) {
+        System.out.println("Unable to find value for key " + key);
+      }
+    } while (value == null);
     return value;
   }
 
-  // загружаем файл
-  private static Properties loadProperties(final String filename) {
-    final Properties properties = new Properties();
+  private static Properties tryOpenProperties(InputStream stream, Properties properties, String filename) {
     try {
-      final InputStream inStream = Task3.class.getResourceAsStream("/" + filename);
-      if (inStream == null) {
-        throw new IOException("Unable to open file " + filename);
-      }
-      properties.load(inStream);
-      inStream.close();
+      properties = loadProperties(stream);
     } catch (IOException e) {
-      e.printStackTrace();
-      throw new RuntimeException("Unable to load file " + filename, e);
+      System.out.println("Unable to read file " + filename);
     }
+    return properties;
+  }
+
+  private static InputStream tryOpenInputStream(InputStream stream, String filename) {
+    try {
+      stream = Files.newInputStream(Paths.get(filename));
+    } catch (IOException e) {
+      System.out.println("Unable to open file " + filename);
+    }
+    return stream;
+  }
+
+  // загружаем файл
+  private static Properties loadProperties(final InputStream fileStream) throws IOException {
+    final Properties properties = new Properties();
+    properties.load(fileStream);
+    fileStream.close();
     return properties;
   }
 }
