@@ -56,8 +56,7 @@ public class Task5 {
   public static void main(final String[] args) {
     // опрашиваем ввод
     final Scanner scanner = new Scanner(System.in);
-    System.out.print("maxTreesCount = ");
-    final int trees = scanner.nextInt();
+    final int trees = tryReadInt("maxTreesCount", scanner);
     scanner.close();
 
     maxTreesCount.set(trees);
@@ -66,5 +65,17 @@ public class Task5 {
     new Thread(digger, "digger").start();
     new Thread(planter, "planter").start();
     new Thread(binder, "binder").start();
+  }
+
+  private static int tryReadInt(final String value, final Scanner scanner) {
+    do {
+      System.out.print(value + " = ");
+      if (scanner.hasNextInt()) {
+        return scanner.nextInt();
+      } else {
+        System.out.println("Only numbers are allowed!");
+        scanner.next();
+      }
+    } while (true);
   }
 }
