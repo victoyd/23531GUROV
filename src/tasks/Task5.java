@@ -1,40 +1,54 @@
 package tasks;
 
 import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Task5 {
 
-  // безопасные счетчики
-  private static final AtomicInteger trees = new AtomicInteger(0);
+  private static final AtomicInteger maxTreesCount = new AtomicInteger(0);
 
-  private static final AtomicInteger hole = new AtomicInteger(0);
-  private static final AtomicInteger plant = new AtomicInteger(0);
-  private static final AtomicInteger readyTree = new AtomicInteger(0);
+  // безопасные счетчики
+  private static final AtomicInteger diggedHoles = new AtomicInteger(0);
+  private static final AtomicInteger plantedTrees = new AtomicInteger(0);
+  private static final AtomicInteger readyTrees = new AtomicInteger(0);
+
+  private static final BlockingQueue<Integer> hole = new LinkedBlockingQueue<>();
+  private static final BlockingQueue<Integer> plant = new LinkedBlockingQueue<>();
 
   // копает яму
   private static final Runnable digger = () -> {
-    while (hole.get() < trees.get()) {
-      if (hole.get() < trees.get()) {
-        System.out.println("копаю яму №" + hole.incrementAndGet());
-      }
+    while (diggedHoles.get() != maxTreesCount.get()) {
+      final int id = diggedHoles.incrementAndGet();
+      System.err.println("копаю яму №" + id);
+      hole.add(id);
     }
   };
 
   // сажает саженец
   private static final Runnable planter = () -> {
-    while (plant.get() < trees.get()) {
-      if (plant.get() < hole.get()) {
-        System.out.println("сажаю саженец №" + plant.incrementAndGet());
+    while (plantedTrees.get() != maxTreesCount.get()) {
+      try {
+        final Integer id = hole.take();
+        System.err.println("сажаю саженец №" + id);
+        plantedTrees.set(id);
+        plant.add(id);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
       }
     }
   };
 
   // подвязывает саженец
   private static final Runnable binder = () -> {
-    while (readyTree.get() < trees.get()) {
-      if (readyTree.get() < plant.get()) {
-        System.out.println("подвязываю саженец №" + readyTree.incrementAndGet());
+    while (readyTrees.get() != maxTreesCount.get()) {
+      try {
+        final Integer id = plant.take();
+        System.err.println("подвязываю саженец №" + id);
+        readyTrees.getAndIncrement();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
       }
     }
   };
@@ -42,11 +56,11 @@ public class Task5 {
   public static void main(final String[] args) {
     // опрашиваем ввод
     final Scanner scanner = new Scanner(System.in);
-    System.out.print("treesCount = ");
-    final int treesCount = scanner.nextInt();
+    System.out.print("maxTreesCount = ");
+    final int trees = scanner.nextInt();
     scanner.close();
 
-    trees.set(treesCount);
+    maxTreesCount.set(trees);
 
     // запускаем потоки
     new Thread(digger, "digger").start();
