@@ -2,21 +2,20 @@ package tasks;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
 public class Task4 {
-  private static final String DEFAULT_MSG = "No value for key ";
+  private static final String DEFAULT_MSG = "No value for key: ";
 
   public static void main(final String[] args) {
     // опрашиваем ввод
     final Scanner scanner = new Scanner(System.in);
-    System.out.print("filename = ");
-    final String filename = scanner.next();
-
     //грузим файл
-    final Map<String, String> props = loadProperties(filename);
+    final Map<String, String> props = tryOpenProps(scanner);
 
     System.out.println("File loaded, enter keys ");
 
@@ -28,20 +27,42 @@ public class Task4 {
     scanner.close();
   }
 
-  // загружаем файл
-  private static Map loadProperties(final String filename) {
-    final Properties properties = new Properties();
+  private static Map tryOpenProps(final Scanner scanner) {
+    InputStream stream = null;
+    Properties properties = null;
+    do {
+      System.out.print("filename = ");
+      final String filename = scanner.next();
+      stream = tryOpenInputStream(stream, filename);
+      if (stream == null) continue;
+      properties = tryOpenProperties(stream, properties, filename);
+    } while (stream == null || properties == null);
+    return properties;
+  }
+
+  private static Properties tryOpenProperties(InputStream stream, Properties properties, String filename) {
     try {
-      final InputStream inStream = Task3.class.getResourceAsStream("/" + filename);
-      if (inStream == null) {
-        throw new IOException("Unable to open file " + filename);
-      }
-      properties.load(inStream);
-      inStream.close();
+      properties = loadProperties(stream);
     } catch (IOException e) {
-      e.printStackTrace();
-      throw new RuntimeException("Unable to load file " + filename, e);
+      System.out.println("Unable to read file " + filename);
     }
+    return properties;
+  }
+
+  private static InputStream tryOpenInputStream(InputStream stream, String filename) {
+    try {
+      stream = Files.newInputStream(Paths.get(filename));
+    } catch (IOException e) {
+      System.out.println("Unable to open file " + filename);
+    }
+    return stream;
+  }
+
+  // загружаем файл
+  private static Properties loadProperties(final InputStream fileStream) throws IOException {
+    final Properties properties = new Properties();
+    properties.load(fileStream);
+    fileStream.close();
     return properties;
   }
 }

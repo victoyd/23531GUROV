@@ -25,6 +25,7 @@ public class Task3 {
       System.out.print("filename = ");
       final String filename = scanner.next();
       stream = tryOpenInputStream(stream, filename);
+      if (stream == null) continue;
       properties = tryOpenProperties(stream, properties, filename);
     } while (stream == null || properties == null);
     return properties;
