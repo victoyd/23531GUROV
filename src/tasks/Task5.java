@@ -2,6 +2,7 @@ package tasks;
 
 import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,12 +18,19 @@ public class Task5 {
   private static final BlockingQueue<Integer> hole = new LinkedBlockingQueue<>();
   private static final BlockingQueue<Integer> plant = new LinkedBlockingQueue<>();
 
+  private static final CyclicBarrier barrier = new CyclicBarrier(3);
+
   // копает яму
   private static final Runnable digger = () -> {
     while (diggedHoles.get() != maxTreesCount.get()) {
-      final int id = diggedHoles.incrementAndGet();
-      System.err.println("копаю яму №" + id);
-      hole.add(id);
+      try {
+        final int id = diggedHoles.incrementAndGet();
+        System.err.println("копаю яму №" + id);
+        hole.add(id);
+        barrier.await();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   };
 
@@ -34,7 +42,8 @@ public class Task5 {
         System.err.println("сажаю саженец №" + id);
         plantedTrees.set(id);
         plant.add(id);
-      } catch (InterruptedException e) {
+        barrier.await();
+      } catch (Exception e) {
         e.printStackTrace();
       }
     }
@@ -47,7 +56,8 @@ public class Task5 {
         final Integer id = plant.take();
         System.err.println("подвязываю саженец №" + id);
         readyTrees.getAndIncrement();
-      } catch (InterruptedException e) {
+        barrier.await();
+      } catch (Exception e) {
         e.printStackTrace();
       }
     }
